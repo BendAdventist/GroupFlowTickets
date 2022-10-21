@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GroupFlowTickets", "src\GroupFlowTickets\GroupFlowTickets.csproj", "{90CEB20B-ED5C-4F47-82AC-F045B21AB4D3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{45E69F19-B2D0-4A70-B0F5-E56D0401AB1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GroupFlowTickets.Data", "src\GroupFlowTickets.Data\GroupFlowTickets.Data.csproj", "{FD9E21A7-DB66-4C44-9A4B-7E611BD58805}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{90CEB20B-ED5C-4F47-82AC-F045B21AB4D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90CEB20B-ED5C-4F47-82AC-F045B21AB4D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90CEB20B-ED5C-4F47-82AC-F045B21AB4D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD9E21A7-DB66-4C44-9A4B-7E611BD58805}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD9E21A7-DB66-4C44-9A4B-7E611BD58805}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD9E21A7-DB66-4C44-9A4B-7E611BD58805}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD9E21A7-DB66-4C44-9A4B-7E611BD58805}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{90CEB20B-ED5C-4F47-82AC-F045B21AB4D3} = {45E69F19-B2D0-4A70-B0F5-E56D0401AB1B}
+		{FD9E21A7-DB66-4C44-9A4B-7E611BD58805} = {45E69F19-B2D0-4A70-B0F5-E56D0401AB1B}
 	EndGlobalSection
 EndGlobal
