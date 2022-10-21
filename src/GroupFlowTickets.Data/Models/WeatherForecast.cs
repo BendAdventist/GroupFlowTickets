@@ -1,4 +1,4 @@
-namespace GroupFlowTickets.Data;
+namespace GroupFlowTickets.Data.Models;
 
 public class WeatherForecast
 {

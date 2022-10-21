@@ -1,20 +1,51 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor.Utilities
+@inherits LayoutComponentBase
 
-<PageTitle><img src="logo.png" alt="Bend Adventist "/>Ticketing</PageTitle>
+<MudThemeProvider Theme="Theme"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
-<div class="page">
-    <div class="sidebar">
+<MudLayout>
+    <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@((e) => DrawerToggle())" />
+        <img src="J2B.png" alt="Journey to Bethlehem" width="256"/> Ticketing
+        <MudSpacer />
+        <LoginDisplay />
+    </MudAppBar>
+    <MudDrawer @bind-Open="@_drawerOpen">
         <NavMenu />
-    </div>
+    </MudDrawer>
+    <MudMainContent Class="px-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
 
-    <main>
-        <div class="top-row px-4 auth">
-            <LoginDisplay />
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
+@code {
+    private static readonly MudColor J2BMidnightBlue = new MudColor(10, 16, 64, 255);
+    private static readonly MudColor J2BGold = new MudColor(230, 177, 61, 255);
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    private static readonly MudTheme Theme = new()
+    {
+        Palette = new()
+        {
+            Primary = J2BMidnightBlue,
+            Secondary = J2BGold,
+            AppbarBackground = J2BMidnightBlue,
+        },
+        // PaletteDark = new()
+        // {
+        //
+        // }
+    };
+
+    
+    private bool _drawerOpen = true;
+
+    private void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

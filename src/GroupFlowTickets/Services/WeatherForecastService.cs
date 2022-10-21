@@ -1,4 +1,6 @@
-namespace GroupFlowTickets.Data;
+using GroupFlowTickets.Data.Models;
+
+namespace GroupFlowTickets.Services;
 
 public class WeatherForecastService
 {

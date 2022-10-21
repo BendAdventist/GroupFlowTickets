@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
-using GroupFlowTickets.Areas.Identity;
+using MudBlazor.Services;
 using GroupFlowTickets.Data;
 using GroupFlowTickets.Data.Models;
+using GroupFlowTickets.Areas.Identity;
+using GroupFlowTickets.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
+builder.Services.AddMudServices();
+
 builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
