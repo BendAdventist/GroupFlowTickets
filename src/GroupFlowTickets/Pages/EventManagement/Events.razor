@@ -5,7 +5,7 @@
 
 @implements IDisposable
 
-@inject IDbContextFactory<ApplicationDbContext> ContextFactory
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <h3>Events</h3>
 
@@ -14,16 +14,16 @@
 @code {
     private List<Event> _events = new();
     
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await RefreshEventsAsync();
+        RefreshEvents();
 
         EventEvents.EventCreated += OnEventCreated;
     }
 
-    private async Task RefreshEventsAsync()
+    private void RefreshEvents()
     {
-        await using var database = await ContextFactory.CreateDbContextAsync();
+        using var database = DbContextFactory.CreateDbContext();
         _events = database.Events.OrderBy(e => e.StartDateTime).ToList();
     }
 

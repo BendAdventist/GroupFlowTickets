@@ -1,6 +1,9 @@
 @page "/CreateEvent"
 @using GroupFlowTickets.Data.Models
 @using GroupFlowTickets.EventHandling
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
 <h3>CreateEvent</h3>
 
 <MudButton OnClick="CreateNewEvent">Create Test Event</MudButton>
@@ -8,7 +11,7 @@
 @code {
     private static int _testNumber = 0;
 
-    private Event GenerateNewEvent() => new()
+    private Event GenerateTestEvent() => new()
     {
         StartDateTime = DateTime.Now,
         Name = $"Test #{++_testNumber}",
@@ -16,6 +19,14 @@
 
     private void CreateNewEvent()
     {
-        EventEvents.RaiseEventCreated(this, GenerateNewEvent());
+        var newEvent = GenerateTestEvent();
+
+        using (var database = DbContextFactory.CreateDbContext())
+        {
+            database.Events.Add(newEvent);
+            database.SaveChanges();
+        }
+
+        EventEvents.RaiseEventCreated(this, newEvent);
     }
 }
