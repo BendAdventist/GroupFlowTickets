@@ -1,0 +1,20 @@
+@using GroupFlowTickets.EventHandling
+<table>
+    <tr>
+        <th>Event Name</th>
+        <th>Start Date/Time</th>
+    </tr>
+    
+    @foreach (var @event in Events)
+    {
+        <tr>
+            <td>@(@event.Name)</td>
+            <td>@(@event.StartDateTime)</td>
+        </tr>
+    }
+</table>
+
+@code {
+    [Parameter]
+    public IEnumerable<Event> Events { get; set; }
+}

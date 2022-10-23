@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Pages\Events\Components" />
     <Folder Include="wwwroot\css" />
   </ItemGroup>
 

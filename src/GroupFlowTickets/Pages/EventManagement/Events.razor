@@ -1,0 +1,41 @@
+@page "/Events"
+
+@using GroupFlowTickets.EventHandling
+@using GroupFlowTickets.Pages.EventManagement.Components
+
+@implements IDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> ContextFactory
+
+<h3>Events</h3>
+
+<EventsTable Events="_events"/>
+
+@code {
+    private List<Event> _events = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshEventsAsync();
+
+        EventEvents.EventCreated += OnEventCreated;
+    }
+
+    private async Task RefreshEventsAsync()
+    {
+        await using var database = await ContextFactory.CreateDbContextAsync();
+        _events = database.Events.OrderBy(e => e.StartDateTime).ToList();
+    }
+
+    private void OnEventCreated(object sender, EventEventArgs e)
+    {
+        _events.Add(e.Event);
+
+        InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        EventEvents.EventCreated -= OnEventCreated;
+    }
+}
