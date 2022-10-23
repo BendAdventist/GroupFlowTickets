@@ -2,7 +2,7 @@ namespace GroupFlowTickets.Data.Models;
 
 public class Reservation
 {
-    public Guid ReservationId { get; set; }
+    public Guid ReservationId { get; init; } = Guid.NewGuid();
     
     
     /// <summary>

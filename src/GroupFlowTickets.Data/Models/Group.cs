@@ -4,7 +4,7 @@ namespace GroupFlowTickets.Data.Models;
 
 public class Group
 {
-    public Guid GroupId { get; set; }
+    public Guid GroupId { get; init; } = Guid.NewGuid();
 
     
     /// <summary>
