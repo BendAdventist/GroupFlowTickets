@@ -33,14 +33,11 @@ public class Group
     /// </summary>
     public bool HasBeenReleased { get; set; }
 
-   
+
     /// <summary>
-    /// The group that will be released directly before this one.
+    /// Where this group comes in the event.
     /// </summary>
-    public Guid? PrecedingGroupId { get; set; } = null;
-    
-    /// <inheritdoc cref="PrecedingGroupId"/>
-    public Group? PrecedingGroup { get; set; } = null;
+    public int Sequence { get; set; }
  
     
     /// <summary>
