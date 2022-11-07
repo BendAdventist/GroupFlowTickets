@@ -1,11 +1,11 @@
 @page "/Events"
-
-@using GroupFlowTickets.EventHandling
 @using GroupFlowTickets.Pages.EventManagement.Components
+@using GroupFlowTickets.Services
 
 @implements IDisposable
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject EventManager EventManager
 
 <h3>Events</h3>
 
@@ -18,7 +18,7 @@
     {
         RefreshEvents();
 
-        EventEvents.EventCreated += OnEventCreated;
+        EventManager.EventCreated += OnEventCreated;
     }
 
     private void RefreshEvents()
@@ -27,7 +27,7 @@
         _events = database.Events.OrderBy(e => e.StartDateTime).ToList();
     }
 
-    private void OnEventCreated(object sender, EventEventArgs e)
+    private void OnEventCreated(EventEventArgs e)
     {
         _events.Add(e.Event);
 
@@ -36,6 +36,6 @@
     
     public void Dispose()
     {
-        EventEvents.EventCreated -= OnEventCreated;
+        EventManager.EventCreated -= OnEventCreated;
     }
 }

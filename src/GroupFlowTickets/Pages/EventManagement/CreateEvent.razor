@@ -1,8 +1,7 @@
 @page "/CreateEvent"
-@using GroupFlowTickets.Data.Models
-@using GroupFlowTickets.EventHandling
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject EventManager EventManager
 
 <h3>CreateEvent</h3>
 
@@ -21,12 +20,6 @@
     {
         var newEvent = GenerateTestEvent();
 
-        using (var database = DbContextFactory.CreateDbContext())
-        {
-            database.Events.Add(newEvent);
-            database.SaveChanges();
-        }
-
-        EventEvents.RaiseEventCreated(this, newEvent);
+        EventManager.Create(newEvent);
     }
 }
