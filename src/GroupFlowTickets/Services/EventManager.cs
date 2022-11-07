@@ -31,6 +31,30 @@ public class EventManager
         EventCreated?.Invoke(new EventEventArgs(eventToCreate));
     }
 
+    public async Task<List<Event>> GetPastEventsAsync()
+    {
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
+        return await QueryEvents(database).Where(e => e.StartDateTime.Date < DateTime.UtcNow.Date).ToListAsync();
+    }
+
+    public async Task<List<Event>> GetEventsTodayAsync()
+    {
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
+        return await QueryEvents(database).Where(e => e.StartDateTime.Date == DateTime.UtcNow.Date).ToListAsync();
+    }
+
+    public async Task<List<Event>> GetFutureEventsAsync()
+    {
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
+        return await QueryEvents(database).Where(e => e.StartDateTime.Date > DateTime.UtcNow.Date).ToListAsync();
+    }
+
+    public async ValueTask<Event?> Get(Guid eventId)
+    {
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
+        return await database.Events.FindAsync(eventId);
+    }
+
     public void Update(Event eventToUpdate)
     {
         using var database = _dbContextFactory.CreateDbContext();
@@ -49,6 +73,12 @@ public class EventManager
         database.SaveChanges();
         
         EventDeleted?.Invoke(new EventEventArgs(eventToDelete));
+    }
+
+
+    private IQueryable<Event> QueryEvents(ApplicationDbContext database)
+    {
+        return database.Events.OrderBy(e => e.StartDateTime);
     }
 }
 

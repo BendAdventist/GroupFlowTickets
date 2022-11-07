@@ -12,7 +12,7 @@
 
     private Event GenerateTestEvent() => new()
     {
-        StartDateTime = DateTime.Now,
+        StartDateTime = DateTime.UtcNow + TimeSpan.FromDays(1),
         Name = $"Test #{++_testNumber}",
     };
 
