@@ -49,7 +49,7 @@ public class EventManager
         return await QueryEvents(database).Where(e => e.StartDateTime.Date > DateTime.UtcNow.Date).ToListAsync();
     }
 
-    public async ValueTask<Event?> Get(Guid eventId)
+    public async ValueTask<Event?> GetEvent(Guid eventId)
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
         return await database.Events.FindAsync(eventId);
