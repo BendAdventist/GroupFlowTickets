@@ -1,6 +1,165 @@
-﻿<MudNavMenu>
-    <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All">Home</MudNavLink>
-    <MudNavLink Href="/counter" Icon="@Icons.Material.Filled.Add" >Counter</MudNavLink>
-    <MudNavLink Href="/fetchdata" Icon="@Icons.Material.Filled.List" >Fetch Data</MudNavLink>
-    <MudNavLink Href="/events" Icon="@Icons.Material.Filled.Event" >Events</MudNavLink>
+﻿@implements IDisposable
+
+@inject EventManager EventManager
+
+<MudNavMenu>
+    <MudText Typo="Typo.h6" Class="px-4">Events</MudText>
+    <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Select an event to manage its groups.</MudText>
+    <MudDivider Class="my-2"/>
+    @if (_pastEvents is not null && _pastEvents.Count > 0)
+    {
+        <MudNavGroup Title="Past Events" Expanded="_eventsToday!.Count + _futureEvents!.Count == 0">
+            @foreach (var @event in _pastEvents)
+            {
+                <MudNavLink Href="@("/events/" + @event.EventId)">@(@event.Name)</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+    @if (_eventsToday is not null && _eventsToday.Count > 0)
+    {
+        <MudNavGroup Title="Today's Events" Expanded="true">
+            @foreach (var @event in _eventsToday)
+            {
+                <MudNavLink Href="@("/events/" + @event.EventId)">@(@event.Name)</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+    @if (_futureEvents is not null && _futureEvents.Count > 0)
+    {
+        <MudNavGroup Title="Future Events" Expanded="_eventsToday!.Count == 0">
+            @foreach (var @event in _futureEvents)
+            {
+                <MudNavLink Href="@("/events/" + @event.EventId)">@(@event.Name)</MudNavLink>
+            }
+        </MudNavGroup>
+    }
 </MudNavMenu>
+
+@code {
+    private List<Event>? _pastEvents;
+    private List<Event>? _eventsToday;
+    private List<Event>? _futureEvents;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _pastEvents = await EventManager.GetPastEventsAsync();
+        _eventsToday = await EventManager.GetEventsTodayAsync();
+        _futureEvents = await EventManager.GetFutureEventsAsync();
+
+        EventManager.EventCreated += OnEventCreated;
+        EventManager.EventUpdated += OnEventUpdated;
+    }
+
+    private void OnEventCreated(EventEventArgs e)
+    {
+        DateTime eventDate = e.Event.StartDateTime.Date;
+        DateTime currentDate = DateTime.UtcNow.Date;
+        
+        if (eventDate < currentDate)
+        {
+            _pastEvents?.Add(e.Event);
+            _pastEvents?.SortBy(@event => @event.StartDateTime);
+        }
+        else if (eventDate == currentDate)
+        {
+            _eventsToday?.Add(e.Event);
+            _eventsToday?.SortBy(@event => @event.StartDateTime);
+        }
+        else
+        {
+            _futureEvents?.Add(e.Event);
+            _futureEvents?.SortBy(@event => @event.StartDateTime);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEventUpdated(EventEventArgs e)
+    {
+        Event updatedEvent = e.Event;
+        
+        DateTime eventDate = updatedEvent.StartDateTime.Date;
+        DateTime currentDate = DateTime.UtcNow.Date;
+        
+        if (eventDate < currentDate)
+        {
+            if (_pastEvents is null)
+                return;
+
+            int oldEventIndex = _pastEvents.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+
+            if (oldEventIndex == -1)
+            {
+                _pastEvents?.Add(e.Event);
+                _pastEvents?.SortBy(@event => @event.StartDateTime);
+            }
+            else
+            {
+                DateTime oldEventStartDateTime = _pastEvents[oldEventIndex].StartDateTime;
+
+                _pastEvents[oldEventIndex] = updatedEvent;
+
+                if (oldEventStartDateTime != updatedEvent.StartDateTime)
+                {
+                    _pastEvents?.SortBy(@event => @event.StartDateTime);
+                }    
+            }
+        }
+        else if (eventDate == currentDate)
+        {
+            if (_eventsToday is null)
+                return;
+
+            int oldEventIndex = _eventsToday.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+
+            if (oldEventIndex == -1)
+            {
+                _eventsToday?.Add(e.Event);
+                _eventsToday?.SortBy(@event => @event.StartDateTime);
+            }
+            else
+            {
+                DateTime oldEventStartDateTime = _eventsToday[oldEventIndex].StartDateTime;
+
+                _eventsToday[oldEventIndex] = updatedEvent;
+
+                if (oldEventStartDateTime != updatedEvent.StartDateTime)
+                {
+                    _eventsToday?.SortBy(@event => @event.StartDateTime);
+                }    
+            }
+        }
+        else
+        {
+            if (_futureEvents is null)
+                return;
+
+            int oldEventIndex = _futureEvents.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+
+            if (oldEventIndex == -1)
+            {
+                _futureEvents?.Add(e.Event);
+                _futureEvents?.SortBy(@event => @event.StartDateTime);
+            }
+            else
+            {
+                DateTime oldEventStartDateTime = _futureEvents[oldEventIndex].StartDateTime;
+
+                _futureEvents[oldEventIndex] = updatedEvent;
+
+                if (oldEventStartDateTime != updatedEvent.StartDateTime)
+                {
+                    _futureEvents?.SortBy(@event => @event.StartDateTime);
+                }    
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        EventManager.EventCreated -= OnEventCreated;
+        EventManager.EventUpdated -= OnEventUpdated;
+    }
+}
