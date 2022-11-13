@@ -36,9 +36,9 @@
 </MudNavMenu>
 
 @code {
-    private List<Event>? _pastEvents;
-    private List<Event>? _eventsToday;
-    private List<Event>? _futureEvents;
+    private List<Models.Event>? _pastEvents;
+    private List<Models.Event>? _eventsToday;
+    private List<Models.Event>? _futureEvents;
     
     protected override async Task OnInitializedAsync()
     {
@@ -76,7 +76,7 @@
 
     private void OnEventUpdated(EventEventArgs e)
     {
-        Event updatedEvent = e.Event;
+        var updatedEvent = e.Event;
         
         DateTime eventDate = updatedEvent.StartDateTime.Date;
         DateTime currentDate = DateTime.UtcNow.Date;

@@ -28,6 +28,7 @@ builder.Services.AddMudServices();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<EventManager>();
+builder.Services.AddSingleton<GroupManager>();
 
 var app = builder.Build();
 

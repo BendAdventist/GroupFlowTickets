@@ -1,0 +1,45 @@
+@page "/Events/{EventId:guid}"
+@attribute [Authorize]
+
+@inject EventManager EventManager
+@inject 
+
+@if (!_initialized)
+{
+    <span>Loaing event...</span>
+}
+else if (_event is null)
+{
+    <span>Event not found.</span>
+}
+else
+{
+    <MudPaper>
+        <AuthorizeView Roles="admin">
+            <Authorized>
+                <MudToolBar>
+                    @* <MudTextField @bind-Value="_event.Name" Label="Event Name" ReadOnly="true" Variant="Variant.Text"/> *@
+                    <MudTimePicker Adornment="Adornment.None" PickerVariant="PickerVariant.Inline"></MudTimePicker>
+                </MudToolBar>
+            </Authorized>
+            <NotAuthorized>
+                
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudPaper>
+}
+
+
+@code {
+    private bool _initialized = false;
+    private Models.Event? _event;
+    
+    [Parameter]
+    public Guid EventId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _event = await EventManager.GetEvent(EventId);
+        _initialized = true;
+    }
+}

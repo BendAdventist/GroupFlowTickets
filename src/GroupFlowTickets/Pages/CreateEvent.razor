@@ -10,7 +10,7 @@
 @code {
     private static int _testNumber = 0;
 
-    private Event GenerateTestEvent() => new()
+    private Models.Event GenerateTestEvent() => new()
     {
         StartDateTime = DateTime.UtcNow + TimeSpan.FromDays(1),
         Name = $"Test #{++_testNumber}",
