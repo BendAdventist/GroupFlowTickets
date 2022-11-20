@@ -1,8 +1,10 @@
 @page "/Events/{EventId:guid}"
+@using Microsoft.AspNetCore.Identity
+@using GroupFlowTickets.UnsavedModels
 @attribute [Authorize]
 
 @inject EventManager EventManager
-@inject 
+@inject IDialogService DialogService
 
 @if (!_initialized)
 {
@@ -15,15 +17,34 @@ else if (_event is null)
 else
 {
     <MudPaper>
-        <AuthorizeView Roles="admin">
+        <AuthorizeView Roles="Admin">
             <Authorized>
                 <MudToolBar>
-                    @* <MudTextField @bind-Value="_event.Name" Label="Event Name" ReadOnly="true" Variant="Variant.Text"/> *@
-                    <MudTimePicker Adornment="Adornment.None" PickerVariant="PickerVariant.Inline"></MudTimePicker>
+                    @if (IsEditing)
+                    {
+                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name" />
+                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date"/>
+                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time"/>
+                        <MudNumericField @bind-Value="_unsavedEvent.MinIntervalInSeconds" Label="Minimum Seconds Between Groups"/>
+                        
+                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="DiscardChanges"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="SaveChanges"/>
+                    }
+                    else
+                    {
+                        <MudTextField @bind-Value="_event.Name" Label="Event Name" ReadOnly="true" />
+                        <MudTextField Value="_event.StartDateTime" Label="First Group Start Date/Time" ReadOnly="true" />
+                        <MudNumericField @bind-Value="_event.MinIntervalInSeconds" Label="Minimum Seconds Between Groups" ReadOnly="true"/>
+                        
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="Edit"/>
+                    }
                 </MudToolBar>
             </Authorized>
             <NotAuthorized>
-                
+                <MudGrid>
+                    <MudItem xs="6"><strong>Event Name:</strong> @_event.Name</MudItem>
+                    <MudItem xs="6"><strong>Start Time:</strong> @_event.StartDateTime</MudItem>
+                </MudGrid>
             </NotAuthorized>
         </AuthorizeView>
     </MudPaper>
@@ -32,7 +53,12 @@ else
 
 @code {
     private bool _initialized = false;
+    private bool _eventDeleted = false;
+    
     private Models.Event? _event;
+    private UnsavedEvent? _unsavedEvent;
+
+    private bool IsEditing => _unsavedEvent is not null;
     
     [Parameter]
     public Guid EventId { get; set; }
@@ -41,5 +67,32 @@ else
     {
         _event = await EventManager.GetEvent(EventId);
         _initialized = true;
+    }
+
+    private void Edit()
+    {
+        if (_event is null)
+            return;
+        
+        _unsavedEvent = new(_event);
+    }
+
+    private void DiscardChanges()
+    {
+        _unsavedEvent = null;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (_unsavedEvent is null)
+            return;
+
+        if (_unsavedEvent.IsChanged)
+        {
+            var updatedEvent = _unsavedEvent.GetUpdatedEvent();
+            await EventManager.UpdateAsync(updatedEvent);
+            _event = updatedEvent;
+            _unsavedEvent = null;
+        }
     }
 }

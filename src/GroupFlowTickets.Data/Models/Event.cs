@@ -13,7 +13,7 @@ public class Event
     /// <summary>
     /// The date and time when the first group should start.
     /// </summary>
-    public DateTime StartDateTime { get; set; }
+    public DateTime? StartDateTime { get; set; }
 
     /// <summary>
     /// The minimum number of seconds that should elapse between groups being released.

@@ -34,19 +34,28 @@ public class EventManager
     public async Task<List<Event>> GetPastEventsAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryEvents(database).Where(e => e.StartDateTime.Date < DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database)
+            .Where(e => e.StartDateTime!.Value.Date < DateTime.UtcNow.Date).ToListAsync();
     }
 
     public async Task<List<Event>> GetEventsTodayAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryEvents(database).Where(e => e.StartDateTime.Date == DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database)
+            .Where(e => e.StartDateTime!.Value.Date == DateTime.UtcNow.Date).ToListAsync();
     }
 
     public async Task<List<Event>> GetFutureEventsAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryEvents(database).Where(e => e.StartDateTime.Date > DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database)
+            .Where(e => e.StartDateTime!.Value.Date > DateTime.UtcNow.Date).ToListAsync();
+    }
+
+    public async Task<List<Event>> GetUnscheduledEventsAsync()
+    {
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
+        return await database.Events.Where(e => !e.StartDateTime.HasValue).ToListAsync();
     }
 
     public async ValueTask<Event?> GetEvent(Guid eventId)
@@ -55,30 +64,30 @@ public class EventManager
         return await database.Events.FindAsync(eventId);
     }
 
-    public void Update(Event eventToUpdate)
+    public async Task UpdateAsync(Event eventToUpdate)
     {
-        using var database = _dbContextFactory.CreateDbContext();
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.Events.Attach(eventToUpdate);
         database.Update(eventToUpdate);
-        database.SaveChanges();
+        await database.SaveChangesAsync();
         
         EventUpdated?.Invoke(new EventEventArgs(eventToUpdate));
     } 
     
-    public void Delete(Event eventToDelete)
+    public async Task DeleteAsync(Event eventToDelete)
     {
-        using var database = _dbContextFactory.CreateDbContext();
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.Events.Attach(eventToDelete);
         database.Remove(eventToDelete);
-        database.SaveChanges();
+        await database.SaveChangesAsync();
         
         EventDeleted?.Invoke(new EventEventArgs(eventToDelete));
     }
 
 
-    private IQueryable<Event> QueryEvents(ApplicationDbContext database)
+    private IQueryable<Event> QueryScheduledEvents(ApplicationDbContext database)
     {
-        return database.Events.OrderBy(e => e.StartDateTime);
+        return database.Events.Where(e => e.StartDateTime.HasValue).OrderBy(e => e.StartDateTime!.Value);
     }
 }
 

@@ -39,12 +39,14 @@
     private List<Models.Event>? _pastEvents;
     private List<Models.Event>? _eventsToday;
     private List<Models.Event>? _futureEvents;
+    private List<Models.Event>? _unscheduledEvents;
     
     protected override async Task OnInitializedAsync()
     {
         _pastEvents = await EventManager.GetPastEventsAsync();
         _eventsToday = await EventManager.GetEventsTodayAsync();
         _futureEvents = await EventManager.GetFutureEventsAsync();
+        _unscheduledEvents = await EventManager.GetUnscheduledEventsAsync();
 
         EventManager.EventCreated += OnEventCreated;
         EventManager.EventUpdated += OnEventUpdated;
@@ -52,23 +54,27 @@
 
     private void OnEventCreated(EventEventArgs e)
     {
-        DateTime eventDate = e.Event.StartDateTime.Date;
+        DateTime? eventDate = e.Event.StartDateTime?.Date;
         DateTime currentDate = DateTime.UtcNow.Date;
-        
-        if (eventDate < currentDate)
+
+        if (!eventDate.HasValue)
+        {
+            _unscheduledEvents?.Add(e.Event);
+        }
+        else if (eventDate < currentDate)
         {
             _pastEvents?.Add(e.Event);
-            _pastEvents?.SortBy(@event => @event.StartDateTime);
+            _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
         }
         else if (eventDate == currentDate)
         {
             _eventsToday?.Add(e.Event);
-            _eventsToday?.SortBy(@event => @event.StartDateTime);
+            _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
         }
         else
         {
             _futureEvents?.Add(e.Event);
-            _futureEvents?.SortBy(@event => @event.StartDateTime);
+            _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
         }
 
         InvokeAsync(StateHasChanged);
@@ -78,10 +84,41 @@
     {
         var updatedEvent = e.Event;
         
-        DateTime eventDate = updatedEvent.StartDateTime.Date;
+        DateTime? eventDate = updatedEvent.StartDateTime?.Date;
         DateTime currentDate = DateTime.UtcNow.Date;
         
-        if (eventDate < currentDate)
+        if (!eventDate.HasValue)
+        {
+            if (_unscheduledEvents is null)
+                return;
+
+            int oldEventIndex = _unscheduledEvents.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+
+            if (oldEventIndex == -1)
+            {
+                _unscheduledEvents?.Add(e.Event);
+
+                // Make sure to remove from any other category
+                List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _futureEvents };
+                foreach (var category in otherCategories)
+                {
+                    if (category is null)
+                        continue;
+
+                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+                    if (oldEventIndex != -1)
+                    {
+                        category.RemoveAt(oldEventIndex);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                _unscheduledEvents[oldEventIndex] = updatedEvent;
+            }
+        }        
+        else if (eventDate < currentDate)
         {
             if (_pastEvents is null)
                 return;
@@ -91,17 +128,32 @@
             if (oldEventIndex == -1)
             {
                 _pastEvents?.Add(e.Event);
-                _pastEvents?.SortBy(@event => @event.StartDateTime);
+                _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                // Make sure to remove from any other category
+                List<Models.Event>?[] otherCategories = { _eventsToday, _futureEvents, _unscheduledEvents };
+                foreach (var category in otherCategories)
+                {
+                    if (category is null)
+                        continue;
+
+                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+                    if (oldEventIndex != -1)
+                    {
+                        category.RemoveAt(oldEventIndex);
+                        break;
+                    }
+                }
             }
             else
             {
-                DateTime oldEventStartDateTime = _pastEvents[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _pastEvents[oldEventIndex].StartDateTime!.Value;
 
                 _pastEvents[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _pastEvents?.SortBy(@event => @event.StartDateTime);
+                    _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
@@ -115,17 +167,32 @@
             if (oldEventIndex == -1)
             {
                 _eventsToday?.Add(e.Event);
-                _eventsToday?.SortBy(@event => @event.StartDateTime);
+                _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                // Make sure to remove from any other category
+                List<Models.Event>?[] otherCategories = { _pastEvents, _futureEvents, _unscheduledEvents };
+                foreach (var category in otherCategories)
+                {
+                    if (category is null)
+                        continue;
+                    
+                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+                    if (oldEventIndex != -1)
+                    {
+                        category.RemoveAt(oldEventIndex);
+                        break;
+                    }
+                }
             }
             else
             {
-                DateTime oldEventStartDateTime = _eventsToday[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _eventsToday[oldEventIndex].StartDateTime!.Value;
 
                 _eventsToday[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _eventsToday?.SortBy(@event => @event.StartDateTime);
+                    _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
@@ -139,17 +206,32 @@
             if (oldEventIndex == -1)
             {
                 _futureEvents?.Add(e.Event);
-                _futureEvents?.SortBy(@event => @event.StartDateTime);
+                _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                 // Make sure to remove from any other category
+                List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _unscheduledEvents };
+                foreach (var category in otherCategories)
+                {
+                    if (category is null)
+                        continue;
+                    
+                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+                    if (oldEventIndex != -1)
+                    {
+                        category.RemoveAt(oldEventIndex);
+                        break;
+                    }
+                }
             }
             else
             {
-                DateTime oldEventStartDateTime = _futureEvents[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _futureEvents[oldEventIndex].StartDateTime!.Value;
 
                 _futureEvents[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _futureEvents?.SortBy(@event => @event.StartDateTime);
+                    _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
