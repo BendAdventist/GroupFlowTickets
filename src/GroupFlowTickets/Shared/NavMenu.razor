@@ -6,7 +6,7 @@
     <MudText Typo="Typo.h6" Class="px-4">Events</MudText>
     <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Select an event to manage its groups.</MudText>
     <MudDivider Class="my-2"/>
-    @if (_pastEvents is not null && _pastEvents.Count > 0)
+    @if (_pastEvents?.Count > 0)
     {
         <MudNavGroup Title="Past Events" Expanded="_eventsToday!.Count + _futureEvents!.Count == 0">
             @foreach (var @event in _pastEvents)
@@ -15,7 +15,7 @@
             }
         </MudNavGroup>
     }
-    @if (_eventsToday is not null && _eventsToday.Count > 0)
+    @if (_eventsToday?.Count > 0)
     {
         <MudNavGroup Title="Today's Events" Expanded="true">
             @foreach (var @event in _eventsToday)
@@ -24,7 +24,7 @@
             }
         </MudNavGroup>
     }
-    @if (_futureEvents is not null && _futureEvents.Count > 0)
+    @if (_futureEvents?.Count > 0)
     {
         <MudNavGroup Title="Future Events" Expanded="_eventsToday!.Count == 0">
             @foreach (var @event in _futureEvents)
@@ -33,42 +33,63 @@
             }
         </MudNavGroup>
     }
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            @if (_unscheduledEvents?.Count > 0)
+            {
+                <MudNavGroup Title="Unscheduled Events" Expanded="_unscheduledEvents!.Count != 0">
+                    @foreach (var @event in _unscheduledEvents)
+                    {
+                        <MudNavLink Href="@("/events/" + @event.EventId)">@(@event.Name)</MudNavLink>
+                    }
+                </MudNavGroup>
+            }
+            <MudFab StartIcon="@Icons.Material.Filled.Add" Size="Size.Medium" Class="ml-7 mt-5" OnClick="EventManager.CreateAsync"/>
+        </Authorized>
+    </AuthorizeView>
 </MudNavMenu>
 
 @code {
-    private List<Event>? _pastEvents;
-    private List<Event>? _eventsToday;
-    private List<Event>? _futureEvents;
+    private List<Models.Event>? _pastEvents;
+    private List<Models.Event>? _eventsToday;
+    private List<Models.Event>? _futureEvents;
+    private List<Models.Event>? _unscheduledEvents;
     
     protected override async Task OnInitializedAsync()
     {
         _pastEvents = await EventManager.GetPastEventsAsync();
         _eventsToday = await EventManager.GetEventsTodayAsync();
         _futureEvents = await EventManager.GetFutureEventsAsync();
+        _unscheduledEvents = await EventManager.GetUnscheduledEventsAsync();
 
         EventManager.EventCreated += OnEventCreated;
         EventManager.EventUpdated += OnEventUpdated;
+        EventManager.EventDeleted += OnEventDeleted;
     }
 
     private void OnEventCreated(EventEventArgs e)
     {
-        DateTime eventDate = e.Event.StartDateTime.Date;
-        DateTime currentDate = DateTime.UtcNow.Date;
-        
-        if (eventDate < currentDate)
+        DateTime? eventDate = e.Event.StartDateTime?.ToLocalTime().Date;
+        DateTime currentDate = DateTime.Today;
+
+        if (!eventDate.HasValue)
+        {
+            _unscheduledEvents?.Add(e.Event);
+        }
+        else if (eventDate < currentDate)
         {
             _pastEvents?.Add(e.Event);
-            _pastEvents?.SortBy(@event => @event.StartDateTime);
+            _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
         }
         else if (eventDate == currentDate)
         {
             _eventsToday?.Add(e.Event);
-            _eventsToday?.SortBy(@event => @event.StartDateTime);
+            _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
         }
         else
         {
             _futureEvents?.Add(e.Event);
-            _futureEvents?.SortBy(@event => @event.StartDateTime);
+            _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
         }
 
         InvokeAsync(StateHasChanged);
@@ -76,12 +97,31 @@
 
     private void OnEventUpdated(EventEventArgs e)
     {
-        Event updatedEvent = e.Event;
+        var updatedEvent = e.Event;
         
-        DateTime eventDate = updatedEvent.StartDateTime.Date;
-        DateTime currentDate = DateTime.UtcNow.Date;
+        DateTime? eventDate = e.Event.StartDateTime?.ToLocalTime().Date;
+        DateTime currentDate = DateTime.Today;
         
-        if (eventDate < currentDate)
+        if (!eventDate.HasValue)
+        {
+            if (_unscheduledEvents is null)
+                return;
+
+            int oldEventIndex = _unscheduledEvents.FindIndex(@event => @event.EventId == updatedEvent.EventId);
+
+            if (oldEventIndex == -1)
+            {
+                _unscheduledEvents?.Add(e.Event);
+
+                List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _futureEvents };
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
+            }
+            else
+            {
+                _unscheduledEvents[oldEventIndex] = updatedEvent;
+            }
+        }        
+        else if (eventDate < currentDate)
         {
             if (_pastEvents is null)
                 return;
@@ -91,17 +131,20 @@
             if (oldEventIndex == -1)
             {
                 _pastEvents?.Add(e.Event);
-                _pastEvents?.SortBy(@event => @event.StartDateTime);
+                _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                List<Models.Event>?[] otherCategories = { _eventsToday, _futureEvents, _unscheduledEvents };
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
-                DateTime oldEventStartDateTime = _pastEvents[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _pastEvents[oldEventIndex].StartDateTime!.Value;
 
                 _pastEvents[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _pastEvents?.SortBy(@event => @event.StartDateTime);
+                    _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
@@ -115,17 +158,20 @@
             if (oldEventIndex == -1)
             {
                 _eventsToday?.Add(e.Event);
-                _eventsToday?.SortBy(@event => @event.StartDateTime);
+                _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                List<Models.Event>?[] otherCategories = { _pastEvents, _futureEvents, _unscheduledEvents };
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
-                DateTime oldEventStartDateTime = _eventsToday[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _eventsToday[oldEventIndex].StartDateTime!.Value;
 
                 _eventsToday[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _eventsToday?.SortBy(@event => @event.StartDateTime);
+                    _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
@@ -139,22 +185,51 @@
             if (oldEventIndex == -1)
             {
                 _futureEvents?.Add(e.Event);
-                _futureEvents?.SortBy(@event => @event.StartDateTime);
+                _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
+                
+                List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _unscheduledEvents };
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
-                DateTime oldEventStartDateTime = _futureEvents[oldEventIndex].StartDateTime;
+                DateTime oldEventStartDateTime = _futureEvents[oldEventIndex].StartDateTime!.Value;
 
                 _futureEvents[oldEventIndex] = updatedEvent;
 
                 if (oldEventStartDateTime != updatedEvent.StartDateTime)
                 {
-                    _futureEvents?.SortBy(@event => @event.StartDateTime);
+                    _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 }    
             }
         }
 
         InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEventDeleted(EventEventArgs e)
+    {
+        RemoveFromOriginalCategory(e.Event.EventId, new[]
+        {
+            _unscheduledEvents, _pastEvents, _eventsToday, _futureEvents
+        });
+        
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void RemoveFromOriginalCategory(Guid idOfEventToRemove, IEnumerable<List<Models.Event>?> categories)
+    {
+        foreach (var category in categories)
+        {
+            if (category is null)
+                continue;
+
+            int eventIndex = category.FindIndex(@event => @event.EventId == idOfEventToRemove);
+            if (eventIndex != -1)
+            {
+                category.RemoveAt(eventIndex);
+                break;
+            }
+        }
     }
     
     public void Dispose()

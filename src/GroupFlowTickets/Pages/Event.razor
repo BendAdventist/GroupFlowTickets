@@ -1,0 +1,127 @@
+@page "/Events/{EventId:guid}"
+@using Microsoft.AspNetCore.Identity
+@using GroupFlowTickets.UnsavedModels
+@attribute [Authorize]
+
+@inject EventManager EventManager
+@inject IDialogService DialogService
+
+@if (!_initialized)
+{
+    <span>Loaing event...</span>
+}
+else if (_eventDeleted)
+{
+    <span>The event was deleted successfully.</span>
+}
+else if (_event is null)
+{
+    <span>Event not found.</span>
+}
+else
+{
+    <MudPaper>
+        <MudToolBar>
+            <AuthorizeView Roles="Admin">
+                <Authorized>
+                    @if (IsEditing)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteForever" OnClick="Delete" Class="ml-n2 mr-4"/>
+
+                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name" Class="mr-8"/>
+                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date (UTC)" Class="mr-1"/>
+                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time (UTC)" Class="mr-8"/>
+                        <MudNumericField @bind-Value="_unsavedEvent.MinIntervalInSeconds" Label="Minimum Seconds Between Groups" Class="mr-4"/>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="DiscardChanges"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="SaveChanges"/>
+                    }
+                    else
+                    {
+                        <span><strong>Event Name:</strong> @_event.Name</span>
+                        <MudSpacer/>
+                        <span><strong>Start Date/Time:</strong> @_event.StartDateTime?.ToLocalTime()</span>
+                        <MudSpacer/>
+                        <span><strong>Minimum Interval Between Groups:</strong> @TimeSpan.FromSeconds(_event.MinIntervalInSeconds).ToString("m\\:ss")</span>
+                        <MudSpacer/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="Edit"/>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <span><strong>Event Name:</strong> @_event.Name</span>
+                    <MudSpacer/>
+                    <span><strong>Start Date/Time:</strong> @_event.StartDateTime?.ToLocalTime()</span>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudToolBar>
+    </MudPaper>
+}
+
+
+@code {
+    private bool _initialized = false;
+    private bool _eventDeleted = false;
+    
+    private Models.Event? _event;
+    private UnsavedEvent? _unsavedEvent;
+
+    private bool IsEditing => _unsavedEvent is not null;
+    
+    [Parameter]
+    public Guid EventId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _event = await EventManager.GetEvent(EventId);
+        _unsavedEvent = null;
+        _initialized = true;
+        _eventDeleted = false;
+    }
+
+    private void Edit()
+    {
+        if (_event is null)
+            return;
+        
+        _unsavedEvent = new(_event);
+    }
+
+    private void DiscardChanges()
+    {
+        _unsavedEvent = null;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (_unsavedEvent is null)
+            return;
+
+        if (_unsavedEvent.IsChanged)
+        {
+            var updatedEvent = _unsavedEvent.GetUpdatedEvent();
+            await EventManager.UpdateAsync(updatedEvent);
+            _event = updatedEvent;
+            _unsavedEvent = null;
+        }
+    }
+
+    private async Task Delete()
+    {
+        if (_event is null)
+            return;
+        
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete Event?", 
+            "Are you sure you want to permanently delete the event \"" + _event.Name + "\"?", 
+            yesText: "Delete!", cancelText: "Cancel"
+        );
+
+        if (result.GetValueOrDefault())
+        {
+            await EventManager.DeleteAsync(_event);
+            _event = null;
+            _unsavedEvent = null;
+            _eventDeleted = true;
+        }
+    }
+}

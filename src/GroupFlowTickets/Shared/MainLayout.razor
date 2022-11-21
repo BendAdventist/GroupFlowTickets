@@ -19,8 +19,10 @@
     <MudDrawer @bind-Open="@_drawerOpen">
         <NavMenu />
     </MudDrawer>
-    <MudMainContent Class="px-4">
-        @Body
+    <MudMainContent Class="px-8">
+        <div class="my-8">
+            @Body
+        </div>
     </MudMainContent>
 </MudLayout>
 
@@ -43,7 +45,7 @@
     };
 
     
-    private bool _drawerOpen;
+    private bool _drawerOpen = true;
 
     private void DrawerToggle()
     {
