@@ -26,12 +26,12 @@ else
                 <Authorized>
                     @if (IsEditing)
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteForever" OnClick="Delete"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteForever" OnClick="Delete" Class="ml-n2 mr-4"/>
 
-                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name"/>
-                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date (UTC)"/>
-                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time (UTC)"/>
-                        <MudNumericField @bind-Value="_unsavedEvent.MinIntervalInSeconds" Label="Minimum Seconds Between Groups"/>
+                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name" Class="mr-8"/>
+                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date (UTC)" Class="mr-1"/>
+                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time (UTC)" Class="mr-8"/>
+                        <MudNumericField @bind-Value="_unsavedEvent.MinIntervalInSeconds" Label="Minimum Seconds Between Groups" Class="mr-4"/>
 
                         <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="DiscardChanges"/>
                         <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="SaveChanges"/>
