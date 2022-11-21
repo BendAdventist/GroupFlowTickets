@@ -1,9 +1,54 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Identity
+@inject RoleManager<Models.ApplicationRole> RoleManager
+@inject UserManager<Models.ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDialogService DialogService
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Welcome</PageTitle>
 
-<h1>Hello, world!</h1>
+<AuthorizeView>
+    <Authorized>
+        <AuthorizeView Roles="Admin" Context="SubAuthorizeView">
+            <Authorized>
+                You're already an Admin!
+                <MudButton Disabled="true">Make this user account an Admin</MudButton>
+            </Authorized>
+            <NotAuthorized>
+                For development purposes:
+                <MudButton Variant="Variant.Filled" OnClick="MakeAdminAsync">Make this user account an Admin</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </Authorized>
+    <NotAuthorized>
+        Sign in to enable this button:
+        <MudButton Disabled="true">Make this user account an Admin</MudButton>
+    </NotAuthorized>
+</AuthorizeView>
 
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+        private const string AdminRole = "Admin";
+    
+    private async Task MakeAdminAsync()
+    {
+        if (!await RoleManager.RoleExistsAsync(AdminRole))
+        {
+            await RoleManager.CreateAsync(new ()
+            {
+                Id = Guid.NewGuid(),
+                Name = AdminRole,
+                NormalizedName = "ADMIN"
+            });
+        }
+        
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = (await UserManager.GetUserAsync(authState.User))!;
+        
+        if (!await UserManager.IsInRoleAsync(user, AdminRole))
+        {
+            await UserManager.AddToRoleAsync(user, AdminRole);
+            await DialogService.ShowMessageBox("Log Out Required", "Please log out and log back in again to enjoy your new Admin privileges.");
+        }
+    }
+}
