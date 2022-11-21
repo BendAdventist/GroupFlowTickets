@@ -22,11 +22,16 @@ public class EventManager
     public event EventEventHandler? EventDeleted;
 
 
-    public void Create(Event eventToCreate)
+    public async Task CreateAsync()
     {
-        using var database = _dbContextFactory.CreateDbContext();
+        Event eventToCreate = new()
+        {
+            Name = "New Event"
+        };
+
+        await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.Events.Add(eventToCreate);
-        database.SaveChanges();
+        await database.SaveChangesAsync();
 
         EventCreated?.Invoke(new EventEventArgs(eventToCreate));
     }

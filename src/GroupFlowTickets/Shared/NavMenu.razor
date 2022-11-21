@@ -6,7 +6,7 @@
     <MudText Typo="Typo.h6" Class="px-4">Events</MudText>
     <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Select an event to manage its groups.</MudText>
     <MudDivider Class="my-2"/>
-    @if (_pastEvents is not null && _pastEvents.Count > 0)
+    @if (_pastEvents?.Count > 0)
     {
         <MudNavGroup Title="Past Events" Expanded="_eventsToday!.Count + _futureEvents!.Count == 0">
             @foreach (var @event in _pastEvents)
@@ -15,7 +15,7 @@
             }
         </MudNavGroup>
     }
-    @if (_eventsToday is not null && _eventsToday.Count > 0)
+    @if (_eventsToday?.Count > 0)
     {
         <MudNavGroup Title="Today's Events" Expanded="true">
             @foreach (var @event in _eventsToday)
@@ -24,7 +24,7 @@
             }
         </MudNavGroup>
     }
-    @if (_futureEvents is not null && _futureEvents.Count > 0)
+    @if (_futureEvents?.Count > 0)
     {
         <MudNavGroup Title="Future Events" Expanded="_eventsToday!.Count == 0">
             @foreach (var @event in _futureEvents)
@@ -33,6 +33,20 @@
             }
         </MudNavGroup>
     }
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            @if (_unscheduledEvents?.Count > 0)
+            {
+                <MudNavGroup Title="Unscheduled Events" Expanded="_unscheduledEvents!.Count != 0">
+                    @foreach (var @event in _unscheduledEvents)
+                    {
+                        <MudNavLink Href="@("/events/" + @event.EventId)">@(@event.Name)</MudNavLink>
+                    }
+                </MudNavGroup>
+            }
+            <MudFab StartIcon="@Icons.Material.Filled.Add" Size="Size.Medium" Class="ml-7 mt-5" OnClick="EventManager.CreateAsync"/>
+        </Authorized>
+    </AuthorizeView>
 </MudNavMenu>
 
 @code {

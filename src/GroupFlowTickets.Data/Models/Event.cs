@@ -9,11 +9,11 @@ public class Event
     /// The name of the event.
     /// </summary>
     public string Name { get; set; } = null!;
-    
+
     /// <summary>
     /// The date and time when the first group should start.
     /// </summary>
-    public DateTime? StartDateTime { get; set; }
+    public DateTime? StartDateTime { get; set; } = null;
 
     /// <summary>
     /// The minimum number of seconds that should elapse between groups being released.
