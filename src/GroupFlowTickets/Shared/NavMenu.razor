@@ -50,12 +50,13 @@
 
         EventManager.EventCreated += OnEventCreated;
         EventManager.EventUpdated += OnEventUpdated;
+        EventManager.EventDeleted += OnEventDeleted;
     }
 
     private void OnEventCreated(EventEventArgs e)
     {
-        DateTime? eventDate = e.Event.StartDateTime?.Date;
-        DateTime currentDate = DateTime.UtcNow.Date;
+        DateTime? eventDate = e.Event.StartDateTime?.ToLocalTime().Date;
+        DateTime currentDate = DateTime.Today;
 
         if (!eventDate.HasValue)
         {
@@ -84,8 +85,8 @@
     {
         var updatedEvent = e.Event;
         
-        DateTime? eventDate = updatedEvent.StartDateTime?.Date;
-        DateTime currentDate = DateTime.UtcNow.Date;
+        DateTime? eventDate = e.Event.StartDateTime?.ToLocalTime().Date;
+        DateTime currentDate = DateTime.Today;
         
         if (!eventDate.HasValue)
         {
@@ -98,20 +99,8 @@
             {
                 _unscheduledEvents?.Add(e.Event);
 
-                // Make sure to remove from any other category
                 List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _futureEvents };
-                foreach (var category in otherCategories)
-                {
-                    if (category is null)
-                        continue;
-
-                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
-                    if (oldEventIndex != -1)
-                    {
-                        category.RemoveAt(oldEventIndex);
-                        break;
-                    }
-                }
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
@@ -130,20 +119,8 @@
                 _pastEvents?.Add(e.Event);
                 _pastEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 
-                // Make sure to remove from any other category
                 List<Models.Event>?[] otherCategories = { _eventsToday, _futureEvents, _unscheduledEvents };
-                foreach (var category in otherCategories)
-                {
-                    if (category is null)
-                        continue;
-
-                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
-                    if (oldEventIndex != -1)
-                    {
-                        category.RemoveAt(oldEventIndex);
-                        break;
-                    }
-                }
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
@@ -169,20 +146,8 @@
                 _eventsToday?.Add(e.Event);
                 _eventsToday?.SortBy(@event => @event.StartDateTime!.Value);
                 
-                // Make sure to remove from any other category
                 List<Models.Event>?[] otherCategories = { _pastEvents, _futureEvents, _unscheduledEvents };
-                foreach (var category in otherCategories)
-                {
-                    if (category is null)
-                        continue;
-                    
-                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
-                    if (oldEventIndex != -1)
-                    {
-                        category.RemoveAt(oldEventIndex);
-                        break;
-                    }
-                }
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
@@ -208,20 +173,8 @@
                 _futureEvents?.Add(e.Event);
                 _futureEvents?.SortBy(@event => @event.StartDateTime!.Value);
                 
-                 // Make sure to remove from any other category
                 List<Models.Event>?[] otherCategories = { _pastEvents, _eventsToday, _unscheduledEvents };
-                foreach (var category in otherCategories)
-                {
-                    if (category is null)
-                        continue;
-                    
-                    oldEventIndex = category.FindIndex(@event => @event.EventId == updatedEvent.EventId);
-                    if (oldEventIndex != -1)
-                    {
-                        category.RemoveAt(oldEventIndex);
-                        break;
-                    }
-                }
+                RemoveFromOriginalCategory(updatedEvent.EventId, otherCategories);
             }
             else
             {
@@ -237,6 +190,32 @@
         }
 
         InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEventDeleted(EventEventArgs e)
+    {
+        RemoveFromOriginalCategory(e.Event.EventId, new[]
+        {
+            _unscheduledEvents, _pastEvents, _eventsToday, _futureEvents
+        });
+        
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void RemoveFromOriginalCategory(Guid idOfEventToRemove, IEnumerable<List<Models.Event>?> categories)
+    {
+        foreach (var category in categories)
+        {
+            if (category is null)
+                continue;
+
+            int eventIndex = category.FindIndex(@event => @event.EventId == idOfEventToRemove);
+            if (eventIndex != -1)
+            {
+                category.RemoveAt(eventIndex);
+                break;
+            }
+        }
     }
     
     public void Dispose()

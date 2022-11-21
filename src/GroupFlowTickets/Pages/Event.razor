@@ -10,6 +10,10 @@
 {
     <span>Loaing event...</span>
 }
+else if (_eventDeleted)
+{
+    <span>The event was deleted successfully.</span>
+}
 else if (_event is null)
 {
     <span>Event not found.</span>
@@ -17,36 +21,39 @@ else if (_event is null)
 else
 {
     <MudPaper>
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <MudToolBar>
+        <MudToolBar>
+            <AuthorizeView Roles="Admin">
+                <Authorized>
                     @if (IsEditing)
                     {
-                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name" />
-                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date"/>
-                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteForever" OnClick="Delete"/>
+
+                        <MudTextField @bind-Value="_unsavedEvent.Name" Label="Event Name"/>
+                        <MudDatePicker @bind-Date="_unsavedEvent.StartDate" Label="First Group Start Date (UTC)"/>
+                        <MudTimePicker @bind-Time="_unsavedEvent.StartTime" Label="First Group Start Time (UTC)"/>
                         <MudNumericField @bind-Value="_unsavedEvent.MinIntervalInSeconds" Label="Minimum Seconds Between Groups"/>
-                        
+
                         <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="DiscardChanges"/>
                         <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="SaveChanges"/>
                     }
                     else
                     {
-                        <MudTextField @bind-Value="_event.Name" Label="Event Name" ReadOnly="true" />
-                        <MudTextField Value="_event.StartDateTime" Label="First Group Start Date/Time" ReadOnly="true" />
-                        <MudNumericField @bind-Value="_event.MinIntervalInSeconds" Label="Minimum Seconds Between Groups" ReadOnly="true"/>
-                        
+                        <span><strong>Event Name:</strong> @_event.Name</span>
+                        <MudSpacer/>
+                        <span><strong>Start Date/Time:</strong> @_event.StartDateTime?.ToLocalTime()</span>
+                        <MudSpacer/>
+                        <span><strong>Minimum Interval Between Groups:</strong> @TimeSpan.FromSeconds(_event.MinIntervalInSeconds).ToString("m\\:ss")</span>
+                        <MudSpacer/>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="Edit"/>
                     }
-                </MudToolBar>
-            </Authorized>
-            <NotAuthorized>
-                <MudGrid>
-                    <MudItem xs="6"><strong>Event Name:</strong> @_event.Name</MudItem>
-                    <MudItem xs="6"><strong>Start Time:</strong> @_event.StartDateTime</MudItem>
-                </MudGrid>
-            </NotAuthorized>
-        </AuthorizeView>
+                </Authorized>
+                <NotAuthorized>
+                    <span><strong>Event Name:</strong> @_event.Name</span>
+                    <MudSpacer/>
+                    <span><strong>Start Date/Time:</strong> @_event.StartDateTime?.ToLocalTime()</span>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudToolBar>
     </MudPaper>
 }
 
@@ -66,7 +73,9 @@ else
     protected override async Task OnParametersSetAsync()
     {
         _event = await EventManager.GetEvent(EventId);
+        _unsavedEvent = null;
         _initialized = true;
+        _eventDeleted = false;
     }
 
     private void Edit()
@@ -93,6 +102,26 @@ else
             await EventManager.UpdateAsync(updatedEvent);
             _event = updatedEvent;
             _unsavedEvent = null;
+        }
+    }
+
+    private async Task Delete()
+    {
+        if (_event is null)
+            return;
+        
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete Event?", 
+            "Are you sure you want to permanently delete the event \"" + _event.Name + "\"?", 
+            yesText: "Delete!", cancelText: "Cancel"
+        );
+
+        if (result.GetValueOrDefault())
+        {
+            await EventManager.DeleteAsync(_event);
+            _event = null;
+            _unsavedEvent = null;
+            _eventDeleted = true;
         }
     }
 }

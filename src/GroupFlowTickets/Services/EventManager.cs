@@ -34,22 +34,22 @@ public class EventManager
     public async Task<List<Event>> GetPastEventsAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryScheduledEvents(database)
-            .Where(e => e.StartDateTime!.Value.Date < DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database).AsAsyncEnumerable()
+            .Where(e => e.StartDateTime!.Value.ToLocalTime().Date < DateTime.Today).ToListAsync();
     }
 
     public async Task<List<Event>> GetEventsTodayAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryScheduledEvents(database)
-            .Where(e => e.StartDateTime!.Value.Date == DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database).AsAsyncEnumerable()
+            .Where(e => e.StartDateTime!.Value.ToLocalTime().Date == DateTime.Today).ToListAsync();
     }
 
     public async Task<List<Event>> GetFutureEventsAsync()
     {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        return await QueryScheduledEvents(database)
-            .Where(e => e.StartDateTime!.Value.Date > DateTime.UtcNow.Date).ToListAsync();
+        return await QueryScheduledEvents(database).AsAsyncEnumerable()
+            .Where(e => e.StartDateTime!.Value.ToLocalTime().Date > DateTime.Today).ToListAsync();
     }
 
     public async Task<List<Event>> GetUnscheduledEventsAsync()
